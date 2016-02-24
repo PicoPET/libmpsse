@@ -1,0 +1,40 @@
+# SPI #
+
+## Python ##
+
+The following Python code demonstrates using libmpsse to read 256 bytes from a standard SPI flash chip:
+
+```
+from mpsse import *
+
+flash = MPSSE(SPI0, TEN_MHZ, MSB)
+flash.Start()
+flash.Write("\x03\x00\x00\x00")
+data = flash.Read(256)
+flash.Stop()
+flash.Close()
+```
+
+## C ##
+
+The following C code demonstrates using libmpsse to read 256 bytes from a standard SPI flash chip:
+
+```
+#include <mpsse.h>
+
+int main(void)
+{
+   char *data = NULL;
+   struct mpsse_context *flash = NULL;
+
+   flash = MPSSE(SPI0, TEN_MHZ, MSB);
+   Start(flash);
+   Write(flash, "\x03\x00\x00\x00", 4);
+   data = Read(flash, 256);
+   Stop(flash);
+   Close(flash);
+
+   free(data);
+   return 0;
+}
+```

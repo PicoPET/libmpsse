@@ -1,0 +1,650 @@
+
+---
+
+# Initialization #
+
+## MPSSE ##
+
+Opens and initializes the first interface of the first FTDI device found.
+
+```
+struct mpsse_context *MPSSE(enum modes mode, int freq, int endianess);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mode         | Mode to open the device in | SPI0, SPI1, SPI2, SPI3, I2C, GPIO, BITBANG |
+| freq         | Clock frequency to use for the specified mode | 1 - 30,000,000      |
+| endianess    | Specifies how data is clocked in/out | MSB, LSB            |
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Pointer to an MPSSE context structure. | mpsse->open == 1 | mpsse->open == 0 |
+
+The following FTDI devices are searched for by this function:
+
+| **VID** | **PID** | **Description** |
+|:--------|:--------|:----------------|
+| 0x0403  | 0x6010  | FT2232 Future Technology Devices International, Ltd |
+| 0x0403  | 0x6011  | FT4232 Future Technology Devices International, Ltd |
+| 0x0403  | 0x6014  | FT232H Future Technology Devices International, Ltd |
+| 0x0403  | 0x8878  | Bus Blaster v2 (channel A) |
+| 0x0403  | 0x8879  | Bus Blaster v2 (channel B) |
+| 0x0403  | 0xBDC8  | Turtelizer JTAG/RS232 Adapter A |
+| 0x0403  | 0xCFF8  | Amontec JTAGkey |
+| 0x0403  | 0x8A98  | TIAO Multi Protocol Adapter |
+| 0x15BA  | 0x0003  | Olimex Ltd. OpenOCD JTAG |
+| 0x15BA  | 0x0004  | Olimex Ltd. OpenOCD JTAG TINY |
+
+## Open ##
+
+Opens an FTDI device by VID/PID.
+
+```
+struct mpsse_context *Open(int vid, int pid, enum modes mode, int freq, int endianess, int interface, const char *description, const char *serial);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| vid          | Device USB vendor ID | 0 - 65535           |
+| pid          | Device USB product ID | 0 - 65535           |
+| mode         | Mode to open the device in | SPI0, SPI1, SPI2, SPI3, I2C, GPIO, BITBANG |
+| freq         | Clock frequency to use for the specified mode | 1 - 30,000,000      |
+| endianess    | Specifies how data is clocked in/out | MSB, LSB            |
+| interface    | FTDI interface to use | IFACE\_A, IFACE\_B, IFACE\_C, IFACE\_D |
+| description  | Device product description (set to NULL if not needed) | Product description string |
+| serial       | Device serial number (set to NULL if not needed) | Serial number string |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Pointer to an MPSSE context structure. | mpsse->open == 1 | mpsse->open == 0 |
+
+## OpenIndex ##
+
+Opens an FTDI device by VID/PID/index.
+
+```
+struct mpsse_context *OpenIndex(int vid, int pid, enum modes mode, int freq, int endianess, int interface, const char *description, const char *serial, int index);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| vid          | Device USB vendor ID | 0 - 65535           |
+| pid          | Device USB product ID | 0 - 65535           |
+| mode         | Mode to open the device in | SPI0, SPI1, SPI2, SPI3, I2C, GPIO, BITBANG |
+| freq         | Clock frequency to use for the specified mode | 1 - 30,000,000      |
+| endianess    | Specifies how data is clocked in/out | MSB, LSB            |
+| interface    | FTDI interface to use | IFACE\_A, IFACE\_B, IFACE\_C, IFACE\_D |
+| description  | Device product description (set to NULL if not needed) | Product description string |
+| serial       | Device serial number (set to NULL if not needed) | Serial number string |
+| index        | Number of matching device to open if there are more than one, starts with zero | 0 - n               |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Pointer to an MPSSE context structure. | mpsse->open == 1 | mpsse->open == 0 |
+
+
+---
+
+# Deinitialization #
+
+## Close ##
+
+Closes the device, deinitializes libftdi, and frees the MPSSE context pointer.
+
+```
+void Close(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns void     | void        | void        |
+
+
+---
+
+# Assertion #
+
+## Start ##
+
+Generates the data start condition for SPI0, SPI1, SPI2, SPI3, I2C modes.
+
+```
+int Start(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns an MPSSE status value | MPSSE\_OK   | MPSSE\_FAIL |
+
+## Stop ##
+
+Generates the data stop condition for SPI0, SPI1, SPI2, SPI3, I2C modes.
+
+```
+int Stop(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns an MPSSE status value | MPSSE\_OK   | MPSSE\_FAIL |
+
+
+---
+
+# Reading #
+
+## Read ##
+
+Reads data over the selected serial protocol.
+
+```
+char *Read(struct mpsse_context *mpsse, int size);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| size         | Number of bytes to read | 1 - 2,147,483,647   |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns a pointer to the read data | !NULL       | NULL        |
+
+## ReadBits ##
+
+Performs a bit-wise read of up to 8 bits.
+
+```
+char ReadBits(struct mpsse_context *mpsse, int size);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| size         | Number of bits to read | 1-8                 |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns a byte of read bits | 0-255       | 0           |
+
+
+---
+
+# Writing #
+
+## Write ##
+
+Writes data over the selected serial protocol.
+
+```
+int Write(struct mpsse_context *mpsse, char *data, int size);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| data         | Buffer of bytes to write | A valid, readable memory address |
+| size         | Number of bytes to write | 1 - 2,147,483,647   |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns an MPSSE status value | MPSSE\_OK   | MPSSE\_FAIL |
+
+## WriteBits ##
+
+Performs a bit-wise write of up to 8 bits at a time.
+
+```
+int WriteBits(struct mpsse_context *mpsse, char bits, int size);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| bits         | A byte of bits to be written | 0 - 255             |
+| size         | Number of bits to write | 1 - 8               |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns an MPSSE status value | MPSSE\_OK   | MPSSE\_FAIL |
+
+
+---
+
+# SPI #
+
+## Transfer ##
+
+Reads and writes data over the selected serial protocol.
+For use only with SPI0, SPI1, SPI2, SPI3 modes.
+
+```
+char *Transfer(struct mpsse_context *mpsse, char *data, int size);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| data         | Buffer of bytes to write | A valid, readable memory address |
+| size         | Number of bytes to transfer | 1 - 2,147,483,647   |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns a pointer to the read data | !NULL       | NULL        |
+
+## SetCSIdle ##
+
+Sets the idle state of the chip select pin. CS idles high by default.
+
+```
+void SetCSIdle(struct mpsse_context *mpsse, int idle);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| idle         | Set to 1 to idle high, 0 to idle low | 0, 1                |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns void     | void        | void        |
+
+## FastRead ##
+
+Reads data over the selected serial protocol with minimal latency.
+For use only with SPI0, SPI1, SPI2, SPI3 modes when latency is critical to the read operation.
+
+```
+int FastRead(struct mpsse_context *mpsse, char *data, int size);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| data         | Destination buffer pointer | A valid, writable memory address |
+| size         | Number of bytes to read | 1 - 2,147,483,647   |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns an MPSSE status value | MPSSE\_OK   | MPSSE\_FAIL |
+
+## FastWrite ##
+
+Writes data over the selected serial protocol with minimal latency.
+For use only with SPI0, SPI1, SPI2, SPI3 modes when latency is critical to the write operation.
+
+```
+int FastWrite(struct mpsse_context *mpsse, char *data, int size);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| data         | A buffer of bytes to write | A valid, readable memory address |
+| size         | Number of bytes to write | 1 - 2,147,483,647   |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns an MPSSE status value | MPSSE\_OK   | MPSSE\_FAIL |
+
+
+---
+
+# I2C #
+
+## GetAck ##
+
+Returns the last received ACK bit.
+For use only with I2C mode.
+
+```
+int GetAck(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+
+| **Return Value** | **ACK** | **NACK** |
+|:-----------------|:--------|:---------|
+| Returns the ACK value | 0       | 1        |
+
+## SendAcks ##
+
+Causes libmpsse to send ACKs after each read byte.
+For use only with I2C mode.
+
+```
+void SendAcks(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns void     | void        | void        |
+
+## SendNacks ##
+
+Causes libmpsse to send NACKs after each read byte
+For use only with I2C mode.
+
+```
+void SendNacks(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns void     | void        | void        |
+
+
+## Tristate ##
+
+Places all I/O pins into a tristate mode.
+
+```
+int Tristate(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns an MPSSE status value | MPSSE\_OK   | MPSSE\_FAIL |
+
+
+---
+
+# GPIO #
+
+## PinHigh ##
+
+Sets the specified pin high.
+
+```
+int PinHigh(struct mpsse_context *mpsse, int pin);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| pin          | The pin number to set high. | GPIOL0, GPIOL1, GPIOL2, GPIOL3, GPIOH0, GPIOH1, GPIOH2, GPIOH3, GPIOH4, GPIOH5, GPIOH6, GPIOH7 |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns an MPSSE status value | MPSSE\_OK   | MPSSE\_FAIL |
+
+## PinLow ##
+
+Sets the specified pin low.
+
+```
+int PinLow(struct mpsse_context *mpsse, int pin);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| pin          | The pin number to set low. | GPIOL0, GPIOL1, GPIOL2, GPIOL3, GPIOH0, GPIOH1, GPIOH2, GPIOH3, GPIOH4, GPIOH5, GPIOH6, GPIOH7 |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns an MPSSE status value | MPSSE\_OK   | MPSSE\_FAIL |
+
+
+---
+
+# BITBANG #
+
+## ReadPins ##
+
+Reads the state of the chip's pins.
+For use in BITBANG mode only.
+
+```
+int ReadPins(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+| **Return Value** | **High pin's bits set to** | **Low pin's bits set to** |
+|:-----------------|:---------------------------|:--------------------------|
+| Returns a byte with the corresponding pin's bits set | 1                          | 0                         |
+
+## PinState ##
+
+Checks if a specific pin is high or low.
+For use in BITBANG mode only.
+
+```
+int PinState(struct mpsse_context *mpsse, int pin, int state);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| pin          | The pin number of interest | 0 - 7               |
+| state        | The state of the pins, as returned by ReadPins; if set to -1, ReadPins will automatically be called | -1 - 255            |
+
+
+| **Return Value** | **Pin is high** | **Pin is low** |
+|:-----------------|:----------------|:---------------|
+| Returns the state of the specified pin | 1               | 0              |
+
+## WritePins ##
+
+Sets the input/output value of all pins.
+For use in BITBANG mode only.
+
+```
+int WritePins(struct mpsse_context *mpsse, uint8_t data);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| data         | Byte indicating bit hi/low value of each pin | 0 - 255             |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns an MPSSE status value | MPSSE\_OK   | MPSSE\_FAIL |
+
+## SetDirection ##
+
+Manually set the input/output direction of all pins.
+For use in BITBANG mode only.
+
+```
+int SetDirection(struct mpsse_context *mpsse, uint8_t direction);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| direction    | Byte indicating input/output direction of each bit (1 is output, 0 is input) | 0 - 255             |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns an MPSSE status value | MPSSE\_OK   | MPSSE\_FAIL |
+
+
+---
+
+# Miscellaneous #
+
+## FlushAfterRead ##
+
+Enables or disables explicit flushing of the FTDI chip's RX buffers after each read operation.
+Flushing is disabled by default.
+
+```
+void FlushAfterRead(struct mpsse_context *mpsse, int tf);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| tf           | Set to 1 to enable flushing, or 0 to disable flushing | 0, 1                |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns void     | void        | void        |
+
+## SetLoopback ##
+
+Enable / disable the FTDI chip's internal loopback.
+
+
+```
+int SetLoopback(struct mpsse_context *mpsse, int enable);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+| enable       | 0 to disable loopback, 1 to enable loopback | 0, 1                |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns an MPSSE status value | MPSSE\_OK   | MPSSE\_FAIL |
+
+## GetClock ##
+
+Gets the currently configured clock rate.
+
+```
+int GetClock(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns the current clock rate, in hertz | Clock rate in hertz | 0           |
+
+## ErrorString ##
+Retrieves the last error string from libftdi.
+
+```
+const char *ErrorString(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| A pointer to a string constant | Error string | NULL\_CONTEXT\_ERROR\_MSG |
+
+## Version ##
+
+Obtain the libmpsse version number.
+
+```
+char Version(void);
+```
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| Returns the libmpsse version number | High nibble is major version, low nibble is minor version | 0           |
+
+## GetDescription ##
+
+Returns the description of the FTDI chip, if opened via [MPSSE](CAPI#MPSSE.md).
+
+```
+const char *GetDescription(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| A pointer to a string constant | FTDI Device description | NULL        |
+
+## GetPid ##
+
+Returns the product ID of the FTDI chip.
+
+```
+int GetPid(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| The FTDI device's product ID | Product ID  | 0           |
+
+## GetVid ##
+
+Returns the vendor ID of the FTDI chip.
+
+```
+int GetVid(struct mpsse_context *mpsse);
+```
+
+| **Argument** | **Description** | **Accepted Values** |
+|:-------------|:----------------|:--------------------|
+| mpsse        | MPSSE context pointer | Any context pointer returned by one of libmpsse's [initialization functions](CAPI#Initialization.md) |
+
+
+| **Return Value** | **Success** | **Failure** |
+|:-----------------|:------------|:------------|
+| The FTDI device's vendor ID | Vendor ID   | 0           |
