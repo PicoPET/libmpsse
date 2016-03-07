@@ -1187,7 +1187,7 @@ int WritePins(struct mpsse_context *mpsse, uint8_t data)
 	{
 		if(mpsse->mode == BITBANG)
 		{
-			if(ftdi_write_data(&mpsse->ftdi, &data, 1) == 0)
+			if(ftdi_write_data(&mpsse->ftdi, &data, 1) == 1)
 			{
 				retval = MPSSE_OK;
 			}
