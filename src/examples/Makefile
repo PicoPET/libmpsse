@@ -2,22 +2,22 @@ LDFLAGS=-lmpsse
 
 all: spiflash spiflashfast i2ceeprom ds1305 gpio bitbang
 
-spiflash:
+spiflash: spiflash.c
 	$(CC) $(CFLAGS) spiflash.c -o spiflash $(LDFLAGS)
 
-spiflashfast:
+spiflashfast: spiflashfast.c
 	$(CC) $(CFLAGS) spiflashfast.c -o spiflashfast $(LDFLAGS)
 
-i2ceeprom:
+i2ceeprom: i2ceeprom.c
 	$(CC) $(CFLAGS) i2ceeprom.c -o i2ceeprom $(LDFLAGS)
 
-ds1305:
+ds1305: ds1305.c
 	$(CC) $(CFLAGS) ds1305.c -o ds1305 $(LDFLAGS)
 
-gpio:
+gpio: gpio.c
 	$(CC) $(CFLAGS) gpio.c -o gpio $(LDFLAGS)
 
-bitbang:
+bitbang: bitbang.c
 	$(CC) $(CFLAGS) bitbang.c -o bitbang $(LDFLAGS)
 
 clean:
