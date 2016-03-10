@@ -24,7 +24,7 @@ int main(void)
 	int retval = EXIT_FAILURE, dumped_bytes = 0;
 	struct mpsse_context *flash = NULL;
 	
-	if((flash = MPSSE(SPI0, 20000000, MSB)) != NULL && flash->open)
+	if((flash = MPSSE(SPI0, 15000000, MSB)) != NULL && flash->open)
 	{
 		printf("%s initialized at %d Hz (SPI mode 0)\n", GetDescription(flash), GetClock(flash));
 		
