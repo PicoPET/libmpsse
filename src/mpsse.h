@@ -15,7 +15,7 @@
 #define MSB			0x00
 #define LSB			0x08
 
-#define CHUNK_SIZE		65535
+#define CHUNK_SIZE		1600
 #define SPI_RW_SIZE		(63 * 1024) 
 #define SPI_TRANSFER_SIZE	2000
 #define I2C_TRANSFER_SIZE	64
