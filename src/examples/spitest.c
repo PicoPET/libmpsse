@@ -88,13 +88,17 @@ int main(int argc, char **argv)
 				{
 					Start(flash);
 
+#if 0
 					/* Write timestamp of pulling down #CS.  */
 					WRITE_TIMESTAMP_TO_FILE(fp);
+#endif
 
 					data = Transfer(flash, tx_buffer, TRANSFER_SIZE);
 
+#if 0
 					/* Write timestamp of end-of-transfer.  */
 					WRITE_TIMESTAMP_TO_FILE(fp);
+#endif
 
 					Stop(flash);
 
