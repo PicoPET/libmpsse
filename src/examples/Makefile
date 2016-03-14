@@ -1,4 +1,5 @@
-LDFLAGS=-lmpsse
+LDFLAGS=-L/usr/local/lib -lmpsse
+CFLAGS=-O2 -g -I/usr/local/include
 
 all: spiflash spitest spiflashfast i2ceeprom ds1305 gpio bitbang
 
