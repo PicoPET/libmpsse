@@ -5,9 +5,8 @@
 #include <unistd.h>
 #include <mpsse.h>
 #include <time.h>
+#include <string.h>
 
-#define SIZE	0x10			// Size of SPI flash device: 1MB
-#define RCMD	"\xde\xad\xbe\xef\xca\xfe\xba\xbe"	// Standard SPI flash read command (0x03) followed by starting address (0x000000)
 #define FOUT	"trace.bin"		// Output file
 
 #ifdef SWIGPYTHON
@@ -15,17 +14,17 @@
 #endif
 
 #define NUM_FRAMES     160
-#define TRANSFER_SIZE 1536
+#define TRANSFER_SIZE (1536 * 8)
 
-/* Append current timeval to file DEST.  */
-#define WRITE_TIMESTAMP_TO_FILE(DEST) \
+/* Append current timeval to buffer at PTR.  */
+#define WRITE_TIMESTAMP_TO_BUFFER(PTR) \
 do { \
-  struct timeval buf; \
-  gettimeofday (&buf, NULL); \
-  fwrite ((void *) &buf, sizeof (struct timeval), 1, DEST); \
+  gettimeofday ((struct timeval *) (PTR), NULL); \
+  (PTR) = ((unsigned char *) (PTR)) + sizeof (struct timeval); \
 } while (0)
 
 unsigned char tx_buffer[TRANSFER_SIZE] = { 0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0xba, 0xbe };
+unsigned char *rx_buffer = NULL, *data_ptr;
 
 int main(int argc, char **argv)
 {
@@ -45,32 +44,43 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if ((rx_buffer = malloc (32 + num_frames * (TRANSFER_SIZE + 32))) == NULL)
+	{
+		perror (argv[0]);
+		exit (1);
+	}
+	else
+		data_ptr = rx_buffer;
+
 	fp = fopen(FOUT, "wb");
 	if (!fp)
 	{
-		perror ("Cannot open FOUT");
+		perror (argv[0]);
 		exit (1);
 	}
 
 	/* Write timestamp of FTx232H init.  */
-	WRITE_TIMESTAMP_TO_FILE(fp);
+	WRITE_TIMESTAMP_TO_BUFFER (data_ptr);
 
 	if((flash = MPSSE(SPI0, 15000000, MSB)) != NULL && flash->open)
 	{
+		FlushAfterRead (flash, 0);
+
 		printf("%s initialized at %d Hz (SPI mode 0)\n", GetDescription(flash), GetClock(flash));
 
 		Start(flash);
 
 		/* Write timestamp of pulling down #CS.  */
-		WRITE_TIMESTAMP_TO_FILE(fp);
+		WRITE_TIMESTAMP_TO_BUFFER (data_ptr);
 
+#if 1
 		data = Transfer(flash, tx_buffer, TRANSFER_SIZE);
+#else
+		data = Read (flash, TRANSFER_SIZE);
+#endif
 
 		/* Write timestamp of end-of-tranfer.  */
-		WRITE_TIMESTAMP_TO_FILE(fp);
-
-		Stop(flash);
-
+		WRITE_TIMESTAMP_TO_BUFFER (data_ptr);
 #if 1		
 		if(data.data)
 		{
@@ -79,38 +89,54 @@ int main(int argc, char **argv)
 				int i;
 
 				fprintf (stderr, "data.size = %d, data.data = 0x%08lx\n", data.size, (unsigned long) data.data);
+#if 0
 				fwrite(data.data, 1, data.size, fp);
+#else
+				memcpy (data_ptr, data.data,TRANSFER_SIZE);
+				data_ptr += TRANSFER_SIZE;
+#endif
 				free(data.data);
 				dumped_bytes += data.size;
+
+				Stop(flash);
 
 				/* Exchange next 'num_frames' TRANSFER_SIZE-byte bursts.  */
 				for (i = 0; i < num_frames - 1; i++)
 				{
 					Start(flash);
 
-#if 0
+#if 1
 					/* Write timestamp of pulling down #CS.  */
-					WRITE_TIMESTAMP_TO_FILE(fp);
+					WRITE_TIMESTAMP_TO_BUFFER (data_ptr);
 #endif
 
+#if 1
 					data = Transfer(flash, tx_buffer, TRANSFER_SIZE);
-
-#if 0
-					/* Write timestamp of end-of-transfer.  */
-					WRITE_TIMESTAMP_TO_FILE(fp);
+#else
+					data = Read (flash, TRANSFER_SIZE);
 #endif
 
-					Stop(flash);
+#if 1
+					/* Write timestamp of end-of-transfer.  */
+					WRITE_TIMESTAMP_TO_BUFFER (data_ptr);
+#endif
 
 					if (data.data)
 					{
+#if 0
 						fwrite(data.data, 1, data.size, fp);
+#else
+						memcpy (data_ptr, data.data, TRANSFER_SIZE);
+						data_ptr += TRANSFER_SIZE;
+#endif
 						dumped_bytes += data.size;
 						free(data.data);
+						Stop(flash);
 					}
 					else
 						break;
 				}
+				fwrite (rx_buffer, dumped_bytes, 1, fp);
 				fclose(fp);
 				
 				printf("Dumped %d bytes to %s\n", dumped_bytes, FOUT);
