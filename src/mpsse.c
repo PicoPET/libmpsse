@@ -603,7 +603,7 @@ void SetCSIdle(struct mpsse_context *mpsse, int idle)
 
 /* 
  * Enables or disables flushing of the FTDI chip's RX buffers after each read operation.
- * Flushing is disable by default.
+ * Flushing is disabled by default.
  *
  * @mpsse - MPSSE context pointer.
  * @tf    - Set to 1 to enable flushing, or 0 to disable flushing.
