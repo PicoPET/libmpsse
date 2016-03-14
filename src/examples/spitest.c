@@ -44,7 +44,9 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if ((rx_buffer = malloc (32 + num_frames * (TRANSFER_SIZE + 32))) == NULL)
+	/* Add 16 bytes for the log start TS, and 32 bytes per frame to hold
+	   host-side frame start and end TSes.  */
+	if ((rx_buffer = malloc (16 + num_frames * (TRANSFER_SIZE + 32))) == NULL)
 	{
 		perror (argv[0]);
 		exit (1);
@@ -61,6 +63,7 @@ int main(int argc, char **argv)
 
 	/* Write timestamp of FTx232H init.  */
 	WRITE_TIMESTAMP_TO_BUFFER (data_ptr);
+	dumped_bytes += sizeof (struct timeval);
 
 	if((flash = MPSSE(SPI0, 15000000, MSB)) != NULL && flash->open)
 	{
@@ -72,6 +75,7 @@ int main(int argc, char **argv)
 
 		/* Write timestamp of pulling down #CS.  */
 		WRITE_TIMESTAMP_TO_BUFFER (data_ptr);
+		dumped_bytes += sizeof (struct timeval);
 
 #if 1
 		data = Transfer(flash, tx_buffer, TRANSFER_SIZE);
@@ -81,6 +85,7 @@ int main(int argc, char **argv)
 
 		/* Write timestamp of end-of-tranfer.  */
 		WRITE_TIMESTAMP_TO_BUFFER (data_ptr);
+		dumped_bytes += sizeof (struct timeval);
 #if 1		
 		if(data.data)
 		{
@@ -92,8 +97,8 @@ int main(int argc, char **argv)
 #if 0
 				fwrite(data.data, 1, data.size, fp);
 #else
-				memcpy (data_ptr, data.data,TRANSFER_SIZE);
-				data_ptr += TRANSFER_SIZE;
+				memcpy (data_ptr, data.data, data.size);
+				data_ptr += data.size;
 #endif
 				free(data.data);
 				dumped_bytes += data.size;
@@ -108,6 +113,7 @@ int main(int argc, char **argv)
 #if 1
 					/* Write timestamp of pulling down #CS.  */
 					WRITE_TIMESTAMP_TO_BUFFER (data_ptr);
+					dumped_bytes += sizeof (struct timeval);
 #endif
 
 #if 1
@@ -119,6 +125,7 @@ int main(int argc, char **argv)
 #if 1
 					/* Write timestamp of end-of-transfer.  */
 					WRITE_TIMESTAMP_TO_BUFFER (data_ptr);
+					dumped_bytes += sizeof (struct timeval);
 #endif
 
 					if (data.data)
@@ -126,8 +133,8 @@ int main(int argc, char **argv)
 #if 0
 						fwrite(data.data, 1, data.size, fp);
 #else
-						memcpy (data_ptr, data.data, TRANSFER_SIZE);
-						data_ptr += TRANSFER_SIZE;
+						memcpy (data_ptr, data.data, data.size);
+						data_ptr += data.size;
 #endif
 						dumped_bytes += data.size;
 						free(data.data);
