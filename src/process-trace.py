@@ -2,9 +2,18 @@ from struct import *
 import time
 from datetime import date, datetime, timedelta
 
-def delta_ts_from_parts(low, high):
-    return low + (high & 0xf) * 256
- 
+vref = 2.9625  # reference "3.000" of the STM in Volt
+resistor = 0.500 #  the installed resistor
+gain = 50
+
+# Formula for actual current: rawI * vref / 4096.0 / gain / resistor
+def rawToCurrent (rawCurrent):
+    return float (rawCurrent) * vref / gain / resistor / 4096.0
+
+# Formula for actual voltage: rawV * vref / 4096.0 * 2
+def rawToVoltage (rawVoltage):
+    return float (rawVoltage) * vref / 4096.0 * 2
+
 f = open ('trace.bin', 'rb')
 
 (seconds, useconds) = unpack ('qq', f.read(16))
@@ -29,13 +38,16 @@ def processFrame(frame):
 
     fduration = 0
 
-    (seconds, useconds) = unpack ('qq', frame[0:16])
-    print ('[HOST] Transaction: ' + ('%15.6f' % (seconds + 0.000001 * useconds)), end='')
+    (seconds_start, useconds_start, seconds_end, useconds_end) = unpack ('qqqq', frame[0:32])
 
-    (seconds, useconds) = unpack ('qq', frame[16:32])
-    print (' .. ' + ('%15.6f' % (seconds + 0.000001 * useconds)))
+    print ('[HOST] Transaction: ' + ('%15.6f' % (seconds_start + 0.000001 * useconds_start)), end='')
+    print (' .. ' + ('%15.6f' % (seconds_end + 0.000001 * useconds_end)))
 
-    (TS, TS_at_Tx) = unpack ('II', frame[32:40])
+    print ('[HOST] Transaction: ' + ('0x%08x:0x%08x' % (seconds_start, useconds_start)), end='')
+    print (' .. ' + ('0x%08x:0x%08x' % (seconds_end, useconds_end)))
+
+    # Skip SIX 0x0 values (one sample...) spuriously received ahead of the actual STM32F4 frame.
+    (TS, TS_at_Tx) = unpack ('II', frame[38:46])
 
     # On empty frames (no SPI data on MISO) both timestamps are 0xffffffff.
     # If either differs from 0xfffffffff, it's a valid frame.
@@ -49,14 +61,18 @@ def processFrame(frame):
         if TS > TS_at_Tx:
             print ("[SLAVE] *** frame partially overwritten after being submitted for Tx")
 
-        for i in range(40, 1536*8 + 32, 6):
+        for i in range(46, 1536*8 + 32, 6):
             if i <= 1536*8 + 26:
                 (delta_ts, chan_plus_current, chan_plus_voltage) = unpack ('HHH', frame[i:i+6])
                 channel = (chan_plus_current & 0xf000) >> 12
-                current = chan_plus_current & 0xfff
-                voltage = chan_plus_voltage & 0xfff
+                current = rawToCurrent (chan_plus_current & 0xfff)
+                voltage = rawToVoltage (chan_plus_voltage & 0xfff)
+                # If a sample is all-zeroes, do not print it (it's part of end-of-buffer space.)
+                if delta_ts == 0 and channel == 0 and current == 0 and voltage == 0:
+                    break
+
                 fduration += delta_ts
-                print ('%10d, %1d, %4d, %4d' % (TS + delta_ts, channel, current, voltage))
+                print ('%.6f, %1d, %8.6f, %8.6f' % ((TS + delta_ts) / 1000000, channel, current, voltage))
                 TS += delta_ts
 
         print ('[SLAVE] Frame timespan: %d microseconds' % fduration)
