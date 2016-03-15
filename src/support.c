@@ -118,6 +118,15 @@ unsigned char *build_block_buffer(struct mpsse_context *mpsse, uint8_t cmd, unsi
 		total_size += (CMD_SIZE * 3 * num_blocks);
 	}
 
+	if (mpsse->mode >= SPI0 && mpsse->mode <= SPI3
+	    && !(cmd & MPSSE_BITMODE)
+	    && (cmd == mpsse->rx || cmd == mpsse->txrx))
+	{
+		/* In SPI byte receive or transfer mode, add space for
+		   a SEND_IMMEDIATE command at the end of each block.  */
+		total_size += num_blocks;
+	}
+
         buf = malloc(total_size);
         if(buf)
         {
@@ -196,6 +205,13 @@ unsigned char *build_block_buffer(struct mpsse_context *mpsse, uint8_t cmd, unsi
 					buf[i++] = 0;
 					buf[i++] = SEND_IMMEDIATE;
 				}
+			}
+			/* In SPI mode, when receiving bytes, add send_immediate.  */
+			else if (mpsse->mode >= SPI0 && mpsse->mode <= SPI3
+				 && !(cmd & MPSSE_BITMODE)
+				 && (cmd == mpsse->rx || cmd == mpsse->txrx))
+			{
+				buf[i++] = SEND_IMMEDIATE;
 			}
 		}
 
