@@ -224,6 +224,20 @@ void Close(struct mpsse_context *mpsse)
 	return;
 }
 
+/* Purge the Rx FIFO of the FTDI device.
+ * Use to prevent spurious Rx data that could otherwise be read before
+ * the actual receive payload.
+ *
+ * Returns void.
+ */
+void PurgeRxBuffer (struct mpsse_context *mpsse)
+{
+	if (mpsse->open)
+	{
+		ftdi_usb_purge_rx_buffer(&mpsse->ftdi);
+	}
+}
+
 /* Enables bit-wise data transfers.
  * Must be called after MPSSE() / Open() / OpenIndex().
  *
