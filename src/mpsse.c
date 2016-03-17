@@ -228,6 +228,8 @@ void Close(struct mpsse_context *mpsse)
  * Use to prevent spurious Rx data that could otherwise be read before
  * the actual receive payload.
  *
+ * @mpsse - MPSSE context pointer.
+ *
  * Returns void.
  */
 void PurgeRxBuffer (struct mpsse_context *mpsse)
