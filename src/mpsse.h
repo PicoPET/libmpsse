@@ -15,9 +15,15 @@
 #define MSB			0x00
 #define LSB			0x08
 
-#define CHUNK_SIZE		1540
-#define SPI_RW_SIZE		(63 * 1024) 
+#define CHUNK_SIZE	       65536
+#define TX_CHUNK_SIZE		2048
+#define RX_CHUNK_SIZE		2048
+#define SPI_RW_SIZE		1536
+#define SPI_READ_SIZE	       65536
+#define SPI_WRITE_SIZE		1536
 #define SPI_TRANSFER_SIZE	1536
+#define SPI_TX_PAYLOAD_SIZE	1536
+#define SPI_RX_PAYLOAD_SIZE	2048
 #define I2C_TRANSFER_SIZE	64
 
 #define LATENCY_MS		1
@@ -156,6 +162,8 @@ struct mpsse_context
 	int pid;
 	int clock;
 	int xsize;
+	int txsize;
+	int rxsize;
 	int open;
 	int endianess;
 	uint8_t tris;

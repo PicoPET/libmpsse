@@ -1,13 +1,16 @@
 LDFLAGS=-L/usr/local/lib -lmpsse
 CFLAGS=-O2 -g -I/usr/local/include
 
-all: spiflash spitest spiflashfast i2ceeprom ds1305 gpio bitbang
+all: spiflash spitest spitest-rxonly spiflashfast i2ceeprom ds1305 gpio bitbang
 
 spiflash: spiflash.c
 	$(CC) $(CFLAGS) spiflash.c -o spiflash $(LDFLAGS)
 
 spitest: spitest.c
 	$(CC) $(CFLAGS) spitest.c -o spitest $(LDFLAGS)
+
+spitest-rxonly: spitest-rxonly.c
+	$(CC) $(CFLAGS) spitest-rxonly.c -o spitest-rxonly $(LDFLAGS)
 
 spiflashfast: spiflashfast.c
 	$(CC) $(CFLAGS) spiflashfast.c -o spiflashfast $(LDFLAGS)
@@ -26,6 +29,6 @@ bitbang: bitbang.c
 
 clean:
 	rm -f *.dSYM
-	rm -f bitbang gpio ds1305 i2ceeprom spiflash spiflashfast spitest
+	rm -f bitbang gpio ds1305 i2ceeprom spiflash spiflashfast spitest spitest-rxonly
 
 distclean: clean

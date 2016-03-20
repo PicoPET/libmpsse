@@ -149,6 +149,8 @@ struct mpsse_context *OpenIndex(int vid, int pid, enum modes mode, int freq, int
 				else
 				{
 					mpsse->xsize = SPI_RW_SIZE;
+					mpsse->txsize = SPI_WRITE_SIZE;
+					mpsse->rxsize = SPI_READ_SIZE;
 				}
 	
 				status |= ftdi_usb_reset(&mpsse->ftdi);
@@ -755,9 +757,9 @@ int Write(struct mpsse_context *mpsse, char *data, int size)
 			while(n < size)
 			{
 				txsize = size - n;
-				if(txsize > mpsse->xsize)
+				if(txsize > mpsse->txsize)
 				{
-					txsize = mpsse->xsize;
+					txsize = mpsse->txsize;
 				}
 	
 				/* 
@@ -807,7 +809,7 @@ int Write(struct mpsse_context *mpsse, char *data, int size)
 char *InternalRead(struct mpsse_context *mpsse, int size)
 {
 	unsigned char *data = NULL, *buf = NULL;
-	unsigned char sbuf[SPI_RW_SIZE] = { 0 };
+	unsigned char sbuf[2048] = { 0 };
 	int n = 0, rxsize = 0, data_size = 0, retval = 0;
 
 	if(is_valid_context(mpsse))
@@ -822,9 +824,9 @@ char *InternalRead(struct mpsse_context *mpsse, int size)
 				while(n < size)
 				{
 					rxsize = size - n;
-					if(rxsize > mpsse->xsize)
+					if(rxsize > mpsse->rxsize)
 					{
-						rxsize = mpsse->xsize;
+						rxsize = mpsse->rxsize;
 					}
 	
 					data = build_block_buffer(mpsse, mpsse->rx, sbuf, rxsize, &data_size);
