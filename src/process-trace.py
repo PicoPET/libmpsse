@@ -2,7 +2,7 @@ from struct import *
 import time
 from datetime import date, datetime, timedelta
 
-# This is the slave frame size: 12 KiB, starting with two microsecond timestamps:
+# Slave frame size: 12 KiB, starting with two 32-bit microsecond timestamps:
 # - TS of first ADC ISR for that buffer (whether with full sample or not)
 # - TS of submission of buffer for DMA (NSS was pulled down).
 slave_frame_size = 1536 * 8
@@ -87,7 +87,7 @@ def processFrame(frame):
                     break
 
                 fduration += delta_ts
-                print ('%.6f, %1d, %8.6f, %8.6f' % ((TS + delta_ts) / 1000000, channel, current, voltage))
+                print ('%.6f, %1d, %8.6f, %8.6f, 0x%03x, 0x%03x' % ((TS + delta_ts) / 1000000, channel, current, voltage, chan_plus_current & 0xfff, chan_plus_voltage & 0xfff))
                 TS += delta_ts
 
         print ('[SLAVE] Frame timespan: %d microseconds' % fduration)
