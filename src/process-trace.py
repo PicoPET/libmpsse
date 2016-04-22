@@ -60,8 +60,6 @@ def processFrame(frame):
     else:
         frame_start = 32
 
-    print ('[SLAVE] foo = 0x%x, bar = 0x%x' % (foo, bar))
-
     (TS, TS_at_Tx) = unpack ('II', frame[frame_start:frame_start+8])
 
     # On empty frames (no SPI data on MISO) both timestamps are 0xffffffff.
@@ -74,7 +72,13 @@ def processFrame(frame):
            got_start_TS = True
 
         if TS > TS_at_Tx:
-            print ("[SLAVE] *** frame partially overwritten after being submitted for Tx")
+            print ("[SLAVE] *** frame partially overwritten after being submitted for Tx (or slave timer wrap-around)")
+
+        # Always-positive delta of time between start of frame and its transfer.
+        # The transfer starts between 6 and 10 microseconds AFTER the host transaction start TS.
+	# Assume an average value of 8.
+        deltaTS_frameStart_to_Tx = (TS_at_Tx - TS_start) if TS_at_Tx > TS_start else (TS_at_Tx + 2^32 - TS_start)
+        hostTS = (seconds_start * 1000000 + useconds_start) - deltaTS_frameStart_to_Tx + 8
 
         for i in range(frame_start + 8, slave_frame_size + 32, 6):
             if i <= slave_frame_size + 26:
@@ -87,8 +91,9 @@ def processFrame(frame):
                     break
 
                 fduration += delta_ts
-                print ('%.6f, %1d, %8.6f, %8.6f, 0x%03x, 0x%03x' % ((TS + delta_ts) / 1000000, channel, current, voltage, chan_plus_current & 0xfff, chan_plus_voltage & 0xfff))
                 TS += delta_ts
+                hostTS += delta_ts
+                print ('%.6f, %.6f, %1d, %8.6f, %8.6f, 0x%03x, 0x%03x' % (TS / 1000000, hostTS / 1000000, channel, current, voltage, chan_plus_current & 0xfff, chan_plus_voltage & 0xfff))
 
         print ('[SLAVE] Frame timespan: %d microseconds' % fduration)
         duration += fduration
