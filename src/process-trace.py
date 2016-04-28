@@ -2,6 +2,12 @@ from struct import *
 import time
 from datetime import date, datetime, timedelta
 
+import argparse
+
+parser = argparse.ArgumentParser(description='Process a binary energy trace acquired from MAGEEC')
+parser.add_argument('tracefile', metavar='FILE', nargs=1, type=str, default=['trace.bin'], help='name of the binary trace file')
+args = parser.parse_args()
+
 # Slave frame size: 12 KiB, starting with two 32-bit microsecond timestamps:
 # - TS of first ADC ISR for that buffer (whether with full sample or not)
 # - TS of submission of buffer for DMA (NSS was pulled down).
@@ -19,7 +25,7 @@ def rawToCurrent (rawCurrent):
 def rawToVoltage (rawVoltage):
     return float (rawVoltage) * vref / 4096.0 * 2
 
-f = open ('trace.bin', 'rb')
+f = open (args.tracefile[0], 'rb')
 
 (seconds, useconds) = unpack ('qq', f.read(16))
 
