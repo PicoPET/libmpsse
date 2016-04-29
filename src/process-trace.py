@@ -39,7 +39,7 @@ while frame != b'':
     frames.append(frame)
     frame = f.read(slave_frame_size + 32)
 
-print ('Read %df frames. Now on to decoding...' % len(frames))
+print ('Read %d frames. Now on to decoding...' % len(frames))
 
 duration = 0
 got_start_TS = False
@@ -52,9 +52,10 @@ def processFrame(frame):
     fduration = 0
 
     (seconds_start, useconds_start, seconds_end, useconds_end) = unpack ('qqqq', frame[0:32])
+    transfer_duration = (seconds_end + 0.000001 * useconds_end) - (seconds_start + 0.000001 * useconds_start)
 
     print ('[HOST] Transaction: ' + ('%15.6f' % (seconds_start + 0.000001 * useconds_start)), end='')
-    print (' .. ' + ('%15.6f' % (seconds_end + 0.000001 * useconds_end)))
+    print (' .. ' + ('%15.6f (duration %0.3fms)' % (seconds_end + 0.000001 * useconds_end, transfer_duration * 1000)))
 
     print ('[HOST] Transaction: ' + ('0x%08x:0x%08x' % (seconds_start, useconds_start)), end='')
     print (' .. ' + ('0x%08x:0x%08x' % (seconds_end, useconds_end)))
@@ -71,7 +72,7 @@ def processFrame(frame):
     # On empty frames (no SPI data on MISO) both timestamps are 0xffffffff.
     # If either differs from 0xfffffffff, it's a valid frame.
     if TS != 0xffffffff or TS_at_Tx != 0xffffffff:
-        print ("[SLAVE] Frame start at TS = %d (0x%x), submitted at TS = %d (0x%x)" % (TS, TS, TS_at_Tx, TS_at_Tx))
+        print ("[SLAVE] Frame start at TS = %d (0x%x), submitted at TS = %d (0x%x), sending latency %0.3f" % (TS, TS, TS_at_Tx, TS_at_Tx, (TS_at_Tx - TS) / 1000.0))
 
         if not got_start_TS:
            TS_start = TS
