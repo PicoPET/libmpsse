@@ -55,7 +55,7 @@ def processFrame(frame):
     transfer_duration = (seconds_end + 0.000001 * useconds_end) - (seconds_start + 0.000001 * useconds_start)
 
     print ('[HOST] Transaction: ' + ('%15.6f' % (seconds_start + 0.000001 * useconds_start)), end='')
-    print (' .. ' + ('%15.6f (duration %0.3fms)' % (seconds_end + 0.000001 * useconds_end, transfer_duration * 1000)))
+    print (' .. ' + ('%15.6f (duration %7.3fms)' % (seconds_end + 0.000001 * useconds_end, transfer_duration * 1000)))
 
     print ('[HOST] Transaction: ' + ('0x%08x:0x%08x' % (seconds_start, useconds_start)), end='')
     print (' .. ' + ('0x%08x:0x%08x' % (seconds_end, useconds_end)))
@@ -72,7 +72,7 @@ def processFrame(frame):
     # On empty frames (no SPI data on MISO) both timestamps are 0xffffffff.
     # If either differs from 0xfffffffff, it's a valid frame.
     if TS != 0xffffffff or TS_at_Tx != 0xffffffff:
-        print ("[SLAVE] Frame start at TS = %d (0x%x), submitted at TS = %d (0x%x), sending latency %0.3f" % (TS, TS, TS_at_Tx, TS_at_Tx, (TS_at_Tx - TS) / 1000.0))
+        print ("[SLAVE] Frame start at TS = %d (0x%x), submitted at TS = %d (0x%x), sending latency %7.3f" % (TS, TS, TS_at_Tx, TS_at_Tx, (TS_at_Tx - TS) / 1000.0))
 
         if not got_start_TS:
            TS_start = TS
