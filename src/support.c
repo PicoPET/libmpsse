@@ -41,7 +41,9 @@ int raw_read(struct mpsse_context *mpsse, unsigned char *buf, int size)
 	{
 		while(n < size)
 		{
-			r = ftdi_read_data(&mpsse->ftdi, buf, size);
+			/* In case of partial reads, store new data starting at the location where
+			   the previous read ended and reduce maximum read count accordingly.  */
+			r = ftdi_read_data(&mpsse->ftdi, buf+n, size-n);
 			if(r < 0) break;
 			n += r;
 		}
