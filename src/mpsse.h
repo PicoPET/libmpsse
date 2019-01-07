@@ -40,6 +40,9 @@
 
 #define LOW			0
 #define HIGH			1
+#define INPUT			0
+#define OUTPUT			1
+
 #define NUM_GPIOL_PINS		4
 #define NUM_GPIO_PINS		12
 
@@ -117,8 +120,8 @@ enum i2c_ack
 	NACK = 1
 };
 
-#define DEFAULT_TRIS            (SK | DO | CS | GPIO0 | GPIO1 | GPIO2 | GPIO3)  /* SK/DO/CS and GPIOs are outputs, DI is an input */
-#define DEFAULT_PORT            (SK | CS)       				/* SK and CS are high, all others low */
+#define DEFAULT_TRIS            (SK | DO | CS)  /* SK/DO/CS are outputs, DI and GPIOs are inputs */
+#define DEFAULT_PORT            (SK | CS)      	/* SK and CS are high, all others low */
 
 enum mpsse_commands
 {
@@ -206,10 +209,13 @@ void FlushAfterRead(struct mpsse_context *mpsse, int tf);
 int PinHigh(struct mpsse_context *mpsse, int pin);
 int PinLow(struct mpsse_context *mpsse, int pin);
 int SetDirection(struct mpsse_context *mpsse, uint8_t direction);
+int SetGpioPinDirection(struct mpsse_context *mpsse, int pin, uint8_t direction);
 int WriteBits(struct mpsse_context *mpsse, char bits, int size);
 char ReadBits(struct mpsse_context *mpsse, int size);
 int WritePins(struct mpsse_context *mpsse, uint8_t data);
 int ReadPins(struct mpsse_context *mpsse);
+int WaitForGpioL1High(struct mpsse_context *mpsse, unsigned char *pin_values);
+int WaitForGpioL1Low(struct mpsse_context *mpsse, unsigned char *pin_values);
 int PinState(struct mpsse_context *mpsse, int pin, int state);
 int Tristate(struct mpsse_context *mpsse);
 char Version(void);

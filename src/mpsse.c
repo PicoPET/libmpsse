@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #if LIBFTDI1 == 1
 #include <libftdi1/ftdi.h>
@@ -389,7 +390,7 @@ int SetMode(struct mpsse_context *mpsse, int endianess)
 			/* Set the idle pin states */
 			set_bits_low(mpsse, mpsse->pidle);
 	
-			/* All GPIO pins are outputs, set low */
+			/* All high GPIO pins are outputs, set low */
 			mpsse->trish = 0xFF;
 			mpsse->gpioh = 0x00;
 	
@@ -1184,6 +1185,57 @@ int SetDirection(struct mpsse_context *mpsse, uint8_t direction)
 }
 
 /*
+ *
+ * Sets pin direction for GPIO pins.
+ *
+ * Meaningful only outside the BITBANG mode.  The setting is applied
+ * only in the library and is not directly propagated to the FTDI
+ * chip, so it is safe to perform the update even when the MPSSE is
+ * active.
+ *
+ * Returns MPSSE_OK on success, MPSSE_FAIL upon failure (invalid context, bitbang mode).
+ */
+int SetGpioPinDirection(struct mpsse_context *mpsse, int pin, uint8_t direction)
+{
+	int retval = MPSSE_FAIL;
+
+	if(is_valid_context(mpsse) && mpsse->mode != BITBANG)
+	{
+		/* Pins GPIOL0 through GPIOL3 are in positions 4..7.  */
+		if(pin < NUM_GPIOL_PINS)
+		{
+			/* Convert pin number (0-3) to the corresponding pin bit */
+			pin = (GPIO0 << pin);
+
+			if(direction == OUTPUT)
+			{
+				mpsse->tris |= pin;
+			}
+			else
+			{
+				mpsse->tris &= ~pin;
+			}
+		}
+		else if(pin >= NUM_GPIOL_PINS && pin < NUM_GPIO_PINS)
+		{
+			/* Convert pin number (4 - 11) to the corresponding pin bit */
+			pin -= NUM_GPIOL_PINS;
+
+			if(direction == OUTPUT)
+			{
+				mpsse->tris |= (1 << pin);
+			}
+			else
+			{
+				mpsse->tris &= ~(1 << pin);
+			}
+		}
+	}
+
+	return retval;
+}
+
+/*
  * Sets the input/output value of all pins. For use in BITBANG mode only.
  *
  * @mpsse - MPSSE context pointer.
@@ -1227,6 +1279,89 @@ int ReadPins(struct mpsse_context *mpsse)
 
 	return (int) val;
 }
+
+/*
+ * Wait for GPIOL1 going HIGH.
+ *
+ * Blocks until GPIOL1 goes high.
+ *
+ * Returns MPSSE_OK if the wait could be set up, MPSSE_FAIL otherwise.
+ */
+unsigned char WAIT_FOR_EVENT_GPIOL1_HIGH[] = { 0x88 };
+
+int WaitForGpioL1High(struct mpsse_context *mpsse, unsigned char *pin_values)
+{
+	int retval = MPSSE_FAIL;
+	unsigned char pins;
+	unsigned char bad_command = '\xFA';
+	unsigned char response[2];
+
+	if(is_valid_context(mpsse))
+	{
+		ftdi_read_pins((struct ftdi_context *) &mpsse->ftdi, &pins);
+		fprintf(stderr, "Pins before sending WFE_GPIOL1_HIGH: 0x%02x\n", pins);
+
+		fprintf(stderr, "Sending WAIT_FOR_GPIOL1_HIGH...\n");
+		retval = raw_write(mpsse, WAIT_FOR_EVENT_GPIOL1_HIGH, 1);
+		if (retval == MPSSE_OK)
+			fprintf(stderr, "...done.\n");
+		else
+			fprintf(stderr, "Failed to send WAIT_FOR_GPIOL1_HIGH (0x88)!\n");
+
+#if 0
+		ftdi_read_pins((struct ftdi_context *) &mpsse->ftdi, &pins);
+		fprintf(stderr, "Pins after sending WFE_GPIOL1_HIGH: 0x%02x\n", pins);
+#endif
+
+		fprintf(stderr, "Sending BAD_COMMAND...\n");
+		retval |= raw_write(mpsse, &bad_command, 1);
+		fprintf(stderr, "...done.\n");
+
+		/* As soon as the command is processed, the reply should come as { 0xfa, 0xfa}.  */
+		fprintf(stderr, "Trying to get the reply...\n");
+		raw_read(mpsse, response, 2);
+		fprintf(stderr, "...got { 0x%02x, 0x%02x }.\n", response[0], response[1]);
+
+		ftdi_read_pins((struct ftdi_context *) &mpsse->ftdi, &pins);
+		fprintf(stderr, "Pins after response to BAD_COMMAND: 0x%02x\n", pins);
+
+		if(retval != MPSSE_OK)
+		{
+			return retval;
+		}
+		ftdi_read_pins((struct ftdi_context *) &mpsse->ftdi, (unsigned char *) pin_values);
+	}
+
+	return retval;
+}
+
+/*
+ * Wait for GPIOL1 going LOW.
+ *
+ * Blocks until GPIOL1 goes low.
+ *
+ * Returns MPSSE_OK if the wait could be set up, MPSSE_FAIL otherwise.
+ */
+unsigned char WAIT_FOR_EVENT_GPIOL1_LOW[] = { 0x89, 0x87 };
+
+int WaitForGpioL1Low (struct mpsse_context *mpsse, unsigned char *pin_values)
+{
+	int retval = MPSSE_FAIL;
+
+	if(is_valid_context(mpsse))
+	{
+		PurgeRxBuffer (mpsse);
+		retval = raw_write(mpsse, WAIT_FOR_EVENT_GPIOL1_LOW, sizeof(WAIT_FOR_EVENT_GPIOL1_LOW));
+		if(retval != MPSSE_OK)
+		{
+			return retval;
+		}
+		ftdi_read_pins((struct ftdi_context *) &mpsse->ftdi, (unsigned char *) pin_values);
+	}
+
+	return retval;
+}
+
 
 /*
  * Checks if a specific pin is high or low. For use in BITBANG mode only.
