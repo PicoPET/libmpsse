@@ -15,6 +15,7 @@
 
 #include "mpsse.h"
 #include "support.h"
+#include <stdlib.h>
 
 /* Write data to the FTDI chip */
 int raw_write(struct mpsse_context *mpsse, unsigned char *buf, int size)
